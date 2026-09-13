@@ -9,18 +9,23 @@ var VERSION = 'v1';
 var CACHE = APP_PREFIX + VERSION;
 
 // Core shell, fetched up front so the site works offline after the first visit.
+// Paths are relative to this worker, so the same file serves a site at the
+// origin root and one at a subpath such as /<repo>/ on GitHub Pages.
 var PRECACHE = [
-  '/',
-  '/index.html',
-  '/assets/css/style.css',
-  '/assets/js/nav.js',
-  '/manifest.webmanifest',
-  '/favicon.ico',
-  '/assets/icons/favicon-32x32.png',
-  '/assets/icons/android-icon-96x96.png',
-  '/assets/icons/android-icon-192x192.png',
-  '/assets/icons/apple-icon-180x180.png'
+  './',
+  'index.html',
+  'assets/css/style.css',
+  'assets/js/nav.js',
+  'manifest.webmanifest',
+  'favicon.ico',
+  'assets/icons/favicon-32x32.png',
+  'assets/icons/android-icon-96x96.png',
+  'assets/icons/android-icon-192x192.png',
+  'assets/icons/apple-icon-180x180.png'
 ];
+
+// Absolute URL of the cached shell, resolved once against the worker's scope.
+var SHELL = new URL('index.html', self.location.href).href;
 
 self.addEventListener('install', function (event) {
   event.waitUntil(
@@ -55,6 +60,11 @@ self.addEventListener('fetch', function (event) {
   var url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
+  // Leave anything outside this worker's scope alone — on a shared host such as
+  // <user>.github.io that is somebody else's site.
+  var scope = new URL('./', self.location.href).pathname;
+  if (url.pathname.indexOf(scope) !== 0) return;
+
   // Navigations: network first, so content updates land immediately; the cached
   // shell is the offline fallback.
   if (request.mode === 'navigate') {
@@ -62,12 +72,12 @@ self.addEventListener('fetch', function (event) {
       fetch(request)
         .then(function (response) {
           var copy = response.clone();
-          caches.open(CACHE).then(function (cache) { cache.put('/index.html', copy); });
+          caches.open(CACHE).then(function (cache) { cache.put(SHELL, copy); });
           return response;
         })
         .catch(function () {
           return caches.match(request).then(function (hit) {
-            return hit || caches.match('/index.html');
+            return hit || caches.match(SHELL);
           });
         })
     );

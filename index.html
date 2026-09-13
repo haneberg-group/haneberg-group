@@ -22,14 +22,14 @@
   <meta name="twitter:card" content="summary_large_image">
 
   <link rel="canonical" href="https://haneberg-group.com.cy/">
-  <link rel="icon" type="image/x-icon" href="/favicon.ico">
-  <link rel="icon" type="image/png" sizes="16x16" href="/assets/icons/favicon-16x16.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="/assets/icons/favicon-32x32.png">
-  <link rel="icon" type="image/png" sizes="96x96" href="/assets/icons/favicon-96x96.png">
-  <link rel="apple-touch-icon" sizes="180x180" href="/assets/icons/apple-icon-180x180.png">
-  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16x16.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="96x96" href="assets/icons/favicon-96x96.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-icon-180x180.png">
+  <link rel="manifest" href="manifest.webmanifest">
 
-  <link rel="stylesheet" href="/assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/style.css">
 
   <script type="application/ld+json">
   {
@@ -78,9 +78,44 @@
   </script>
 
   <script>
+    /* canonical and og:* have to be absolute URLs, so they are authored against
+       the production domain above. When the page is served from anywhere else —
+       a GitHub Pages URL, a staging host, localhost — repoint them at the host
+       actually in use, so the tags describe the page the visitor is on.
+       Note: most social scrapers do not run JS, so a link shared from a preview
+       host still previews with the production URLs. */
+    (function () {
+      var PROD = 'https://haneberg-group.com.cy';
+      if (location.origin === PROD) return;
+
+      var base = location.href.split(/[?#]/)[0].replace(/[^/]*$/, '');
+      var abs = function (u) {
+        return u.indexOf(PROD) === 0 ? new URL(u.slice(PROD.length).replace(/^\//, ''), base).href : u;
+      };
+      var set = function (sel, attr) {
+        var el = document.querySelector(sel);
+        if (el) el.setAttribute(attr, abs(el.getAttribute(attr)));
+      };
+
+      set('link[rel="canonical"]', 'href');
+      set('meta[property="og:url"]', 'content');
+      set('meta[property="og:image"]', 'content');
+
+      var ld = document.querySelector('script[type="application/ld+json"]');
+      if (ld) {
+        try {
+          var data = JSON.parse(ld.textContent);
+          ['url', 'image', 'logo'].forEach(function (k) {
+            if (typeof data[k] === 'string') data[k] = abs(data[k]);
+          });
+          ld.textContent = JSON.stringify(data, null, 2);
+        } catch (e) { /* leave the block as authored */ }
+      }
+    })();
+
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function () {
-        navigator.serviceWorker.register('/sw.js', { scope: '/' });
+        navigator.serviceWorker.register('sw.js');
       });
     }
   </script>
@@ -101,7 +136,7 @@
 <header class="site-header">
   <div class="container nav">
     <a href="#top" class="brand" aria-label="Haneberg Group — home">
-      <img class="brand-mark" src="/assets/icons/android-icon-96x96.png" alt="" width="34" height="34" decoding="async">
+      <img class="brand-mark" src="assets/icons/android-icon-96x96.png" alt="" width="34" height="34" decoding="async">
       <span class="brand-name">Haneberg Group</span>
     </a>
     <nav id="primary-nav" class="nav-links" aria-label="Primary">
@@ -668,7 +703,7 @@
     <div class="footer-grid">
       <div class="footer-brand">
         <a href="#top" class="brand" aria-label="Haneberg Group — home">
-          <img class="brand-mark" src="/assets/icons/android-icon-96x96.png" alt="" width="34" height="34" loading="lazy" decoding="async">
+          <img class="brand-mark" src="assets/icons/android-icon-96x96.png" alt="" width="34" height="34" loading="lazy" decoding="async">
           <span class="brand-name">Haneberg Group</span>
         </a>
         <p>
@@ -702,6 +737,6 @@
   </div>
 </footer>
 
-<script src="/assets/js/nav.js" defer></script>
+<script src="assets/js/nav.js" defer></script>
 </body>
 </html>
